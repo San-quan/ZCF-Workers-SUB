@@ -1,0 +1,134 @@
+# Cloudflare-BackCN.yaml - 海外回国养号优化 + IPv6 双保险 + 断网保护 + 兜底回国
+mixed-port: 7890
+allow-lan: true
+mode: rule
+log-level: info
+unified-delay: true
+ipv6: true
+
+proxies:
+  # 替换为你的实际节点（从订阅拉取，如Starlink回国）
+  - name: "🇨🇳 回国节点1"
+    type: vmess
+    server: backcn.example.com
+    port: 443
+    uuid: your-uuid
+    alterId: 0
+    cipher: auto
+    tls: true
+  - name: "🇭🇰 香港节点1"
+    type: vmess
+    server: hk.example.com
+    port: 443
+    uuid: your-uuid
+    alterId: 0
+    cipher: auto
+    tls: true
+  - name: "🌎 海外节点1"
+    type: vmess
+    server: us.example.com
+    port: 443
+    uuid: your-uuid
+    alterId: 0
+    cipher: auto
+    tls: true
+
+proxy-groups:
+  - name: "回国"
+    type: select
+    proxies:
+      - "🇨🇳 .*(回国|中国|CN|国内|BackCN|StarlinkCN).*"
+      - "♻️ 自动选择-回国"
+      - "🔯 故障转移-回国"
+  - name: "香港"
+    type: select
+    proxies:
+      - "🇭🇰 .*(香港|HK|HongKong).*"
+      - "♻️ 自动选择-香港"
+      - "🔯 故障转移-香港"
+  - name: "海外"
+    type: select
+    proxies:
+      - "🌎 .*(美国|US|欧洲|EU|日本|JP|新加坡|SG|韩国|KR|台湾|TW).*"
+      - "♻️ 自动选择-海外"
+      - "🔯 故障转移-海外"
+  - name: "养号"
+    type: fallback
+    proxies:
+      - "回国"
+      - "香港"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 300
+  - name: "♻️ 自动选择-回国"
+    type: url-test
+    proxies:
+      - "🇨🇳 .*(回国|中国|CN|国内|BackCN|StarlinkCN).*"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 300
+    tolerance: 120
+  - name: "♻️ 自动选择-香港"
+    type: url-test
+    proxies:
+      - "🇭🇰 .*(香港|HK|HongKong).*"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 300
+    tolerance: 120
+  - name: "♻️ 自动选择-海外"
+    type: url-test
+    proxies:
+      - "🌎 .*(美国|US|欧洲|EU|日本|JP|新加坡|SG|韩国|KR|台湾|TW).*"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 300
+    tolerance: 120
+  - name: "🔯 故障转移-回国"
+    type: fallback
+    proxies:
+      - "🇨🇳 .*(回国|中国|CN|国内|BackCN|StarlinkCN).*"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 300
+  - name: "🔯 故障转移-香港"
+    type: fallback
+    proxies:
+      - "🇭🇰 .*(香港|HK|HongKong).*"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 300
+  - name: "🔯 故障转移-海外"
+    type: fallback
+    proxies:
+      - "🌎 .*(美国|US|欧洲|EU|日本|JP|新加坡|SG|韩国|KR|台湾|TW).*"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 300
+
+rules:
+  # 1. 精细 IP（IPv4+IPv6）
+  - IP-CIDR6,240e::/20,养号,no-resolve
+  - IP-CIDR6,2409:8000::/20,养号,no-resolve
+  - IP-CIDR6,2a13:1800::/29,养号,no-resolve
+  # 2. 养号域名
+  - DOMAIN-SUFFIX,tiktokv.com,养号
+  - DOMAIN-SUFFIX,snssdk.com,养号
+  - DOMAIN-SUFFIX,kuaishou.com,养号
+  - DOMAIN-SUFFIX,xiaohongshu.com,养号
+  - DOMAIN-SUFFIX,2.taobao.com,养号
+  # 3. 中国基础
+  - DOMAIN-SUFFIX,cn,DIRECT
+  - DOMAIN-SUFFIX,com.cn,DIRECT
+  - DOMAIN-SUFFIX,baidu.com,回国
+  - DOMAIN-SUFFIX,taobao.com,回国
+  - DOMAIN-SUFFIX,qq.com,回国
+  - DOMAIN-SUFFIX,weixin.qq.com,回国
+  - GEOIP,CN,DIRECT
+  - GEOIP,CN-V6,DIRECT
+  - GEOIP,HK,香港
+  # 4. 海外大站
+  - DOMAIN-SUFFIX,google.com,海外
+  - DOMAIN-SUFFIX,youtube.com,海外
+  - DOMAIN-SUFFIX,apple.com,海外
+  - DOMAIN-SUFFIX,microsoft.com,海外
+  - DOMAIN-SUFFIX,amazon.com,海外
+  - DOMAIN-SUFFIX,facebook.com,海外
+  - GEOIP,US,海外
+  - GEOIP,JP,海外
+  - GEOIP,!CN,回国  # 海外回国
+  # 5. 兜底
+  - MATCH,回国
