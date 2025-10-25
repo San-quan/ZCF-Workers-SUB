@@ -130,5 +130,5 @@ rules:
   - GEOIP,US,海外
   - GEOIP,JP,海外
   - GEOIP,!CN,回国  # 海外回国
-  # 5. 兜底
+  # 5. 兜底（改回国）
   - MATCH,回国
